@@ -20,10 +20,10 @@ pip3 install git+https://github.com/openai/whisper.git
 Make sure you are are in the root directory of the source code. Now you can run the project in two modes: Whisper and Google Speech-to-Text.
 #### Whisper Option
 ```bash
-python speech_to_text_muti.py whisper <experiment run ID>
+python speech_to_text.py whisper <experiment run ID>
 ```
 
 #### Google Speech-to-Text option
 ```bash
-GOOGLE_STT_KEY=<GSTT Key> python speech_to_text_muti.py GoogleSTT <experiment run ID>
+GOOGLE_STT_KEY=<GSTT Key> python speech_to_text.py GoogleSTT <experiment run ID>
 ```
