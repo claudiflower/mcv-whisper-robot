@@ -305,20 +305,25 @@ def get_expr_score(current_plate, correct_plate):
 
 def get_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument('engine', type=str)
-    parser.add_argument('exp_run_id', type=str)
+    parser.add_argument('--id', type=str)
+    parser.add_argument('--engine', type=str)
+    parser.add_argument('--model', type=str, default='')
     args = parser.parse_args()
     if args.engine != 'whisper' and args.engine != 'GoogleSTT':
         raise SystemExit('ERROR: The engine must be set to whisper or GoogleSTT.')
-    if len(args.exp_run_id) != 24:
+    if len(args.id) != 24:
         raise SystemExit('ERROR: The experiment run ID (_id) must be a length of 24 symbols.')
     if args.engine == 'GoogleSTT':
         try:
             api_key = os.environ['GOOGLE_STT_KEY']
             if len(api_key) == 0:
-                raise 'ERROR: Provided Google STT key is not valid'
+                raise SystemExit('ERROR: Provided Google STT key is not valid')
         except KeyError:
             raise SystemExit('ERROR: Please provide Google STT key in GOOGLE_STT_KEY environment variable')
+    if args.engine == 'whisper':
+        if args.model != 'base' and args.model != 'medium' and args.model != 'large':
+            raise SystemExit('ERROR: Whisper model can be only base, medium or large')
+
     return args
 
 
@@ -361,4 +366,3 @@ if __name__ == '__main__':
     combine = got_license
     combine.extend(ans1)
     print(f'Correct rate with combine: {len(get_same_items(correct_answer, ans2)) / number_of_steps}')
-
