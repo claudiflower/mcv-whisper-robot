@@ -1,0 +1,10 @@
+/__pycache__
+/bin
+/include
+/venv
+/lib
+/lib64
+*.swp
+.DS_Store
+.env
+.venv
