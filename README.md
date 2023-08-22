@@ -17,12 +17,13 @@ pip3 install git+https://github.com/openai/whisper.git
 ```
 
 ## Usage
-Make sure you are are in the root directory of the source code. Now you can run the project by running the following command:
+Make sure you are are in the root directory of the source code. Now you can run the project by executing the following command
+with the correct arguments.
 ```bash
-python speech_to_text.py --id=<experiment run ID> --engine=<whisper or GoogleSTT> --model<base / medium / large>
+python speech_to_text.py --id=<experiment run ID> --engine=<engine mode> --model<whisper model>
 ```
 
-There are two engine modes: `whisper` and `GoogleSTT` (Google Speech-to-Text). If the engine is set to `whisper`, then
+There are two engine modes: `whisper` and `GoogleSTT` (Google Speech-to-Text). If the `--engine=whisper`, then
 the `--model` option must be `base`, `medium` or `large`. For example,
 ```bash
 python speech_to_text.py --id=64822d9847d575f5c76aa2b9 --engine=whisper --model=medium
