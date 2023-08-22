@@ -69,7 +69,7 @@ class GoogleSTT(SpeechToTextEngine):
             raise Exception('Missing Google STT key')
         self.key = opts['key']
 
-    def transcribe(self,wav):
+    def transcribe(self, wav, model=None):
         current_audio = GoogleSTT.get_binary_item_to_based64(self, wav)
         cur_text = GoogleSTT.get_response_by_api_url(self,current_audio)
         start = wav.find("impaired")
@@ -128,18 +128,17 @@ class GoogleSTT(SpeechToTextEngine):
 
 
 class Whisper(SpeechToTextEngine):
-    def transcribe(self, wav):
+    def transcribe(self, wav, model):
         # whisper.DecodingOptions(fp16=False)
         # backends.mps.is_available()
         # print(torch.backends.mps.is_available())
         device = torch.device("mps")
         device = torch.device("cuda:0")
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # model = whisper.load_model("base.en")
-        model = whisper.load_model("medium.en")
-        # model = whisper.load_model("large")
-        # model = whisper.load_model("base.en")
-        result = model.transcribe(wav)
+        w_model = whisper.load_model("base.en")
+        if model == 'medium': w_model = whisper.load_model("medium.en")
+        elif model == 'large': w_model = whisper.load_model("large")
+        result = w_model.transcribe(wav)
         start = wav.find("impaired")
         name = wav[start:len(wav)]
         list_punct = list(string.punctuation)
@@ -327,12 +326,12 @@ def get_arguments():
     return args
 
 
-def get_answers(stt, exp_run_id):
+def get_answers(stt, exp_run_id, model):
     exp_run = stt.get_exp_run(exp_run_id)
     correct_answer = stt.get_exp_run_answer(exp_run['experiment'])
     transcribed_answer = {}
     for wav in exp_run['audio']:
-        name, transcription = stt.transcribe(wav=wav)
+        name, transcription = stt.transcribe(wav=wav, model=model)
         transcribed_answer[name] = transcription
     return transcribed_answer, correct_answer
 
@@ -344,7 +343,7 @@ if __name__ == '__main__':
     if args.engine == 'GoogleSTT':
         stt = GoogleSTT({'key': os.environ['GOOGLE_STT_KEY']})
 
-    transcribed_answer, correct_answer = get_answers(stt, args.exp_run_id)
+    transcribed_answer, correct_answer = get_answers(stt, args.id, args.model)
     clear_license, license_dirty = nlp_getliencse(transcribed_answer)
     #print("Correct answers")
     #print(correct_answer)
