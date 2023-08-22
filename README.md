@@ -13,11 +13,11 @@ pip3 install -r mcv-whisper-robot/requirements.txt
 
 To install Whisper, run the following command: (see instructions for more details: https://github.com/openai/whisper#setup)
 ```
-pip install git+https://github.com/openai/whisper.git 
+pip3 install git+https://github.com/openai/whisper.git 
 ```
 
 ## Usage
-You have the option to run the project in two modes: Whisper and Google Speech-to-Text.
+Make sure you are are in the root directory of the source code. Now you can run the project in two modes: Whisper and Google Speech-to-Text.
 #### Whisper Option
 ```bash
 python speech_to_text_muti.py whisper <experiment run ID>
