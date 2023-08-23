@@ -1,5 +1,5 @@
 # MCV Whisper Robot
-TODO
+The project is designed to run Whisper and Google Speech-to-Text API for the MCV listening experiments.
 
 ## Build
 Create a Python virtual environment, activate it, `git clone` the project, and install the required dependencies.
@@ -29,7 +29,19 @@ the `--model` option must be `base`, `medium` or `large`. For example,
 python speech_to_text.py --id=64822d9847d575f5c76aa2b9 --engine=whisper --model=medium
 ```
 
-**NOTE:** The system creates an `output` directory and writes results in JSON files in the following format:  
+## Running Output
+The system creates an `output` directory and writes results in JSON files in the following format:  
 `<experiment run ID>_<engine name>_<model name if provided>.json`.  
 For example, `64822d9847d575f5c76aa2b9_GoogleSTT.json`
+
+Output JSON file format:
+```JSON
+{
+  "id": "<experiment run ID>",
+  "engine": "<engine>",
+  "mode": "<if whisper engine is selected>",
+  "blue_rate": "<Blue rate>",
+  "combined_rate": "<combined rate>"
+}
+```
 
