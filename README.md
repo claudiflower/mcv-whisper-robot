@@ -29,3 +29,7 @@ the `--model` option must be `base`, `medium` or `large`. For example,
 python speech_to_text.py --id=64822d9847d575f5c76aa2b9 --engine=whisper --model=medium
 ```
 
+**NOTE:** The system creates an `output` directory and writes results in JSON files in the following format:  
+`<experiment run ID>_<engine name>_<model name if provided>.json`.  
+For example, `64822d9847d575f5c76aa2b9_GoogleSTT.json`
+
