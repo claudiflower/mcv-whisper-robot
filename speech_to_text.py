@@ -1,4 +1,3 @@
-
 import os
 import ssl
 import sys
@@ -71,10 +70,10 @@ class GoogleSTT(SpeechToTextEngine):
 
     def transcribe(self, wav, model=None):
         current_audio = GoogleSTT.get_binary_item_to_based64(self, wav)
-        cur_text = GoogleSTT.get_response_by_api_url(self,current_audio)
+        cur_text = GoogleSTT.get_response_by_api_url(self, current_audio)
         start = wav.find("impaired")
         name = wav[start:len(wav)]
-        return name , cur_text
+        return name, cur_text
 
     def get_exp_run(self, id):
         return super().get_exp_run(id)
@@ -90,8 +89,7 @@ class GoogleSTT(SpeechToTextEngine):
         API_URL = f'https://speech.googleapis.com/v1p1beta1/speech:recognize?key={self.key}'
         global nato_tune
         # print(f"Sending {items} to Google")
-        # # doesn't matter if truncated: will know to
-
+        # doesn't matter if truncated: will know to
         post_request = {
             "config": {
                 "encoding": "LINEAR16",
@@ -168,11 +166,10 @@ def get_word_in_dict(ans_dict):
     smoothie = SmoothingFunction().method4
     new_stopwords = ["reporting", "license", "plate", "putting", "recording", "Reporting", "Supporting", "Recording", "The", "License", "Plate", "life"]
     stpwrd.extend(new_stopwords)
-    clear=[]
-    pure =[]
-    # ans=[]
+    clear = []
+    pure = []
     for key, item in ans_dict.items():
-        text_tokens= word_tokenize(item)
+        text_tokens = word_tokenize(item)
         removing_custom_words = [words for words in text_tokens if not words in stpwrd]
         clear.append((removing_custom_words))
         ans=[]
@@ -183,7 +180,7 @@ def get_word_in_dict(ans_dict):
                 ans.append(cur)
             elif cur.lower() not in nato_dict.keys():
                 curcmax= -1
-                confidence_dict={}
+                confidence_dict = {}
                 for item in nato_dict.keys():
                     confidence_dict[item] = bleu([cur.lower()], item, smoothing_function=smoothie)
                 for k, v in confidence_dict.items():
@@ -191,7 +188,7 @@ def get_word_in_dict(ans_dict):
                     if needed == v:
                         ans.append(k)
         pure.append(ans)
-    lic=[]
+    lic = []
     for item in pure:
         answer_licence = str()
         for cur in item:
@@ -208,21 +205,21 @@ def get_word_lev(transcribed_answer):
     smoothie = SmoothingFunction().method4
     new_stopwords = ["reporting", "license", "plate", "putting", "recording", "Reporting", "Supporting", "Recording", "The", "License", "Plate", "life"]
     stpwrd.extend(new_stopwords)
-    clear=[]
-    pure =[]
+    clear = []
+    pure = []
     for key, item in transcribed_answer.items():
         text_tokens= word_tokenize(item)
         removing_custom_words = [words for words in text_tokens if not words in stpwrd]
         clear.append((removing_custom_words))
-        ans=[]
+        ans = []
         for cur in removing_custom_words:
             if cur.isdigit():
                 ans.append(cur)
             elif cur.lower() in nato_dict.keys():
                 ans.append(cur)
             elif cur.lower() not in nato_dict.keys():
-                curcmax= -1
-                confidence_dict={}
+                curcmax = -1
+                confidence_dict = {}
                 for item in nato_dict.keys():
                     score= lev(cur.lower(), item)
                     confidence_dict[item] = 1 - score / max(len(cur.lower()), len(item))
@@ -231,7 +228,7 @@ def get_word_lev(transcribed_answer):
                     if needed == v:
                         ans.append(k)
         pure.append(ans)
-    lic=[]
+    lic = []
     for item in pure:
         answer_licence = str()
         for cur in item:
@@ -241,65 +238,6 @@ def get_word_lev(transcribed_answer):
                 answer_licence += str(cur[0:1].lower())
         lic.append(answer_licence)
     return lic
-
-
-def nlp_getliencse(transcribed_answer):
-    stpwrd = nltk.corpus.stopwords.words('english')
-    new_stopwords = ["reporting", "license", "plate", "putting", "recording", "Reporting", "Supporting", "Recording", "The", "License", "Plate", "life"]
-    stpwrd.extend(new_stopwords)
-    clear=[]
-    for key, item in transcribed_answer.items():
-        text_tokens= word_tokenize(item)
-        removing_custom_words = [words for words in text_tokens if not words in stpwrd]
-        clear.append((removing_custom_words))
-    license_list=[]
-    license_dirty=[]
-    count=0
-    for removing_custom_words_cur in clear:
-        answer_licence = str()
-        answer_licence_dir = str()
-        for cur in removing_custom_words_cur:
-            if len(removing_custom_words_cur) > 3:
-                if cur.isdigit():
-                    answer_licence += cur
-                    answer_licence_dir += cur
-                elif cur.lower() in nato_dict.keys():
-                    answer_licence += nato_dict[cur.lower()]
-                    answer_licence_dir  += nato_dict[cur.lower()]
-                else :
-                    answer_licence += "$"+cur+"$"
-                    answer_licence_dir += str(cur[0:1].lower())
-        count = count +1
-        license_list.insert( count, answer_licence)
-        license_dirty.insert(count, answer_licence_dir)
-    clear_license=[]
-    while ("" in license_dirty):
-        license_dirty.remove("")
-    for i in license_list:
-        if "$" not in i and i != '' :
-            clear_license.append(i)
-    return clear_license , license_dirty
-
-
-def get_expr_score(current_plate, correct_plate):
-    score = 0
-    m = len(current_plate)
-    lscore = 0
-    for i in range (m + 1):
-        # if len(current_plate) > 6:
-        #     curscore = 5
-        #     confidence_score= 1 - curscore / max(len(current_plate), len(correct_plate))
-        # else:
-        curscore= lev(current_plate, correct_plate)         
-        confidence_score= 1 - curscore / max(len(current_plate), len(correct_plate))
-        score += confidence_score
-        lscore += curscore
-    print(f'Experiment Score: {score / m}')
-    if lscore / m > 6:
-        print ("LScore: 6" )
-    else:
-        print(f'LScore: {lscore / m}')
-    return score / m
 
 
 def get_arguments():
@@ -344,24 +282,14 @@ if __name__ == '__main__':
         stt = GoogleSTT({'key': os.environ['GOOGLE_STT_KEY']})
 
     transcribed_answer, correct_answer = get_answers(stt, args.id, args.model)
-    clear_license, license_dirty = nlp_getliencse(transcribed_answer)
-    #print("Correct answers")
-    #print(correct_answer)
-
-    got_license = get_same_items(list(correct_answer), license_dirty)
 
     number_of_steps = len(correct_answer)
     print(f'Number of steps: {number_of_steps}')
-    correct_rate = len(got_license) / number_of_steps
-    print(f'Correct rate: {correct_rate}')
 
     ans1 = get_word_in_dict(transcribed_answer)
-    print(f'Correct rate with Bleu: {len(get_same_items(correct_answer,ans1)) / number_of_steps}')
-    #get_expr_score(correct_answer,ans1)
-    ans2 = get_word_lev(transcribed_answer)
-    print(f'Correct rate with lex: {len(get_same_items(correct_answer, ans2)) / number_of_steps}')
+    bleu_rate = len(get_same_items(correct_answer, ans1)) / number_of_steps
+    print(f'Correct rate with Bleu: {bleu_rate}')
 
-    #get_expr_score(correct_answer, ans2)
-    combine = got_license
-    combine.extend(ans1)
-    print(f'Correct rate with combine: {len(get_same_items(correct_answer, ans2)) / number_of_steps}')
+    ans2 = get_word_lev(transcribed_answer)
+    combined_rate = len(get_same_items(correct_answer, ans2)) / number_of_steps
+    print(f'Correct rate with combined: {combined_rate}')
