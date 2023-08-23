@@ -4,6 +4,7 @@
 /venv
 /lib
 /lib64
+/output
 *.swp
 .DS_Store
 .env

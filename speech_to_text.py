@@ -1,6 +1,7 @@
 import os
 import ssl
 import sys
+import json
 import click
 import argparse
 import base64
@@ -64,6 +65,7 @@ class SpeechToTextEngine:
 
 class GoogleSTT(SpeechToTextEngine):
     def __init__(self, opts):
+        super().__init__()
         if opts.get('key', None) is None:
             raise Exception('Missing Google STT key')
         self.key = opts['key']
@@ -113,7 +115,6 @@ class GoogleSTT(SpeechToTextEngine):
             #     # print(data)
             plaintext = data['results'][0]['alternatives'][0]['transcript']
             pure_text = str(plaintext).translate(str.maketrans('', '', string.punctuation))
-            print("---------------------------------")
             return pure_text
             # else:
             #     raise Exception('Wrong api expid id ')
@@ -268,9 +269,13 @@ def get_answers(stt, exp_run_id, model):
     exp_run = stt.get_exp_run(exp_run_id)
     correct_answer = stt.get_exp_run_answer(exp_run['experiment'])
     transcribed_answer = {}
+    current_step = 1
+    number_of_steps = len(correct_answer)
     for wav in exp_run['audio']:
+        print(f'[{current_step}/{number_of_steps}] Transcribing {wav} file')
         name, transcription = stt.transcribe(wav=wav, model=model)
         transcribed_answer[name] = transcription
+        current_step += 1
     return transcribed_answer, correct_answer
 
 
@@ -293,3 +298,21 @@ if __name__ == '__main__':
     ans2 = get_word_lev(transcribed_answer)
     combined_rate = len(get_same_items(correct_answer, ans2)) / number_of_steps
     print(f'Correct rate with combined: {combined_rate}')
+
+    result = {
+        "id": args.id,
+        "engine": args.engine,
+        "mode": args.model,
+        "blue_rate": bleu_rate,
+        "combined_rate": combined_rate
+    }
+    filename = f'{args.id}_{args.engine}'
+    if args.engine == 'whisper':
+        filename = f'{filename}_{args.model}'
+
+    dir_name = 'output'
+    exist = os.path.exists(dir_name)
+    if not exist:
+        os.makedirs(dir_name)
+    with open(f'{dir_name}/{filename}.json', "w") as outfile:
+        outfile.write(json.dumps(result))
