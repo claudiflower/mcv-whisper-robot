@@ -41,7 +41,8 @@ Output JSON file format:
   "engine": "<engine>",
   "mode": "<if whisper engine is selected>",
   "blue_rate": "<Blue rate>",
-  "combined_rate": "<combined rate>"
+  "combined_rate": "<combined rate>",
+  "avg_normalized_lscore": "<average normalized lscore>"
 }
 ```
 

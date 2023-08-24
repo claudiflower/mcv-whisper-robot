@@ -62,6 +62,14 @@ class SpeechToTextEngine:
             return correct_array
         raise Exception(f'ERROR: Failed to get experiment {exp_id}'); 
 
+    def get_exp_run_analitics(self, id):
+        api_url = f'{self.api_base_url}/experiment_run/{id}/analitics'
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            resp = response.json()
+            return resp
+        raise Exception(f'ERROR: Failed to get experiment run ({id}) analitics')
+
 
 class GoogleSTT(SpeechToTextEngine):
     def __init__(self, opts):
@@ -82,6 +90,9 @@ class GoogleSTT(SpeechToTextEngine):
 
     def get_exp_run_answer(self, exp_id):
         return super().get_exp_run_answer(exp_id)
+
+    def get_exp_run_analitics(self, id):
+        return super().get_exp_run_analitics(id)
 
     def get_binary_item_to_based64(self, audio_cur):
         resp = requests.get(audio_cur)
@@ -148,14 +159,17 @@ class Whisper(SpeechToTextEngine):
         return super().get_exp_run(id)
 
     def get_exp_run_answer(self, exp_id):
-        return super().get_exp_run_answer(exp_id) 
+        return super().get_exp_run_answer(exp_id)
+
+    def get_exp_run_analitics(self, id):
+        return super().get_exp_run_analitics(id)
 
 
-def get_same_items(list1 , list2):
-    find_liencse  = []
+def get_same_items(list1, list2):
+    find_liencse = []
     for el in list1:
         for cur in list2:
-            if el == cur :
+            if el == cur:
                 find_liencse.append(cur)
             else:
                 continue
@@ -241,6 +255,16 @@ def get_word_lev(transcribed_answer):
     return lic
 
 
+def get_avg_normalized_lscore(stt, id):
+    analitics = stt.get_exp_run_analitics(id)
+    if len(analitics) == 0:
+        raise SystemExit('ERROR: failed to get experiment run analitics')
+    normalized_lscore = 0
+    for step in analitics:
+        normalized_lscore += step["normalized_lscore"]
+    return normalized_lscore / len(analitics)
+
+
 def get_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--id', type=str)
@@ -261,7 +285,6 @@ def get_arguments():
     if args.engine == 'whisper':
         if args.model != 'base' and args.model != 'medium' and args.model != 'large':
             raise SystemExit('ERROR: Whisper model can be only base, medium or large')
-
     return args
 
 
@@ -299,12 +322,16 @@ if __name__ == '__main__':
     combined_rate = len(get_same_items(correct_answer, ans2)) / number_of_steps
     print(f'Correct rate with combined: {combined_rate}')
 
+    avg_normalized_lscore = get_avg_normalized_lscore(stt, args.id)
+    print(f'Average normalizerd lscore: {avg_normalized_lscore}')
+
     result = {
         "id": args.id,
         "engine": args.engine,
         "mode": args.model,
         "blue_rate": bleu_rate,
-        "combined_rate": combined_rate
+        "combined_rate": combined_rate,
+        "avg_normalized_lscore": avg_normalized_lscore
     }
     filename = f'{args.id}_{args.engine}'
     if args.engine == 'whisper':
