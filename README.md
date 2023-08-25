@@ -1,4 +1,4 @@
-# MCV Whisper Robot
+# Automatic Speech Recognition Robot
 The project is designed to run Whisper and Google Speech-to-Text API for the MCV listening experiments.
 
 ## Build
