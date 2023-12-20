@@ -17,6 +17,9 @@ import nltk.data
 import nltk
 from nltk.translate import bleu
 from nltk.translate.bleu_score import SmoothingFunction
+import openai
+api_key = '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'
+openai.api_key = api_key
 
 
 smoothie = SmoothingFunction().method4
@@ -163,6 +166,65 @@ class Whisper(SpeechToTextEngine):
 
     def get_exp_run_analitics(self, id):
         return super().get_exp_run_analitics(id)
+    
+class Chat(SpeechToTextEngine):
+    def transcribe(self, wav):
+        # device = torch.device("mps")
+        # device = torch.device("cuda:0")
+        # w_model = whisper.load_model("base.en")
+        # if model == 'medium': w_model = whisper.load_model("medium.en")
+        # elif model == 'large': w_model = whisper.load_model("large")
+        # result = w_model.transcribe(wav)
+        # list_punct = list(string.punctuation)
+        # pure_text = result["text"].translate(str.maketrans('', '', string.punctuation))
+        current_audio = Chat.get_binary_item_to_based64(self, wav)
+        cur_text = Chat.get_response_by_api_url(self, current_audio)
+        print("Transcription: ")
+        print(cur_text)
+
+        start = wav.find("impaired")
+        name = wav[start:len(wav)]
+
+        return name, cur_text
+
+    def get_exp_run(self, id):
+        return super().get_exp_run(id)
+
+    def get_exp_run_answer(self, exp_id):
+        return super().get_exp_run_answer(exp_id)
+
+    def get_exp_run_analitics(self, id):
+        return super().get_exp_run_analitics(id)
+    
+    def get_binary_item_to_based64(self, audio_cur):
+        resp = requests.get(audio_cur)
+        return base64.b64encode(resp.content).decode('utf-8')
+    
+    def get_response_by_api_url(self, cur_64):
+        api_key = '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'
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+        data = {
+            'model': 'gpt-3.5-turbo',
+            'inputs': {
+                'audio': cur_64
+            },
+            'options': {
+                'transcription': True
+            }
+        }
+        response = requests.post('https://api.openai.com/v1/engines/davinci/complete', json=data, headers=headers)
+
+        if response.status_code == 200:
+            result = response.json()
+            transcription = result['choices'][0]['text'].strip()
+            return transcription
+        else:
+            print("Error getting response from ChatGPT")
+            return None
+            
 
 
 def get_same_items(list1, list2):
@@ -305,9 +367,11 @@ def get_answers(stt, exp_run_id, model):
 if __name__ == '__main__':
     args = get_arguments()
 
-    stt = Whisper()
+    stt = Chat()
     if args.engine == 'GoogleSTT':
         stt = GoogleSTT({'key': os.environ['GOOGLE_STT_KEY']})
+    elif args.engine == 'Whisper':
+        stt = Whisper()
 
     transcribed_answer, correct_answer = get_answers(stt, args.id, args.model)
 
