@@ -17,9 +17,6 @@ import nltk.data
 import nltk
 from nltk.translate import bleu
 from nltk.translate.bleu_score import SmoothingFunction
-import openai
-api_key = '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'
-openai.api_key = api_key
 
 
 smoothie = SmoothingFunction().method4
@@ -168,17 +165,14 @@ class Whisper(SpeechToTextEngine):
         return super().get_exp_run_analitics(id)
     
 class Chat(SpeechToTextEngine):
-    def transcribe(self, wav):
-        # device = torch.device("mps")
-        # device = torch.device("cuda:0")
-        # w_model = whisper.load_model("base.en")
-        # if model == 'medium': w_model = whisper.load_model("medium.en")
-        # elif model == 'large': w_model = whisper.load_model("large")
+    def transcribe(self, wav, model):
         # result = w_model.transcribe(wav)
         # list_punct = list(string.punctuation)
         # pure_text = result["text"].translate(str.maketrans('', '', string.punctuation))
         current_audio = Chat.get_binary_item_to_based64(self, wav)
-        cur_text = Chat.get_response_by_api_url(self, current_audio)
+        #cur_text = Chat.get_response_by_api_url(self, wav)
+        print(wav)
+        cur_text = Chat.chat_client(self, current_audio)
         print("Transcription: ")
         print(cur_text)
 
@@ -195,35 +189,51 @@ class Chat(SpeechToTextEngine):
 
     def get_exp_run_analitics(self, id):
         return super().get_exp_run_analitics(id)
+
+    def chat_client(self, wav):
+        from openai import OpenAI
+        client = OpenAI()
+        print(type(wav))
+        # audio_data = wav.read()
+
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1", 
+            file=wav, 
+            response_format="json"
+        )
+
+        print(transcript)
+        return transcript
     
     def get_binary_item_to_based64(self, audio_cur):
         resp = requests.get(audio_cur)
-        return base64.b64encode(resp.content).decode('utf-8')
+        return resp.content
     
-    def get_response_by_api_url(self, cur_64):
-        api_key = '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'
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
-        }
-        data = {
-            'model': 'gpt-3.5-turbo',
-            'inputs': {
-                'audio': cur_64
-            },
-            'options': {
-                'transcription': True
-            }
-        }
-        response = requests.post('https://api.openai.com/v1/engines/davinci/complete', json=data, headers=headers)
+    # def get_response_by_api_url(self, cur_64):
+    #     import requests
+    #     api_key = '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'
+    #     url = 'https://api.openai.com/v1/audio/transcriptions'
+    #     headers = {
+    #         "Content-Type": "application/json",
+    #         "Authorization": f"Bearer {api_key}",
+    #     }
+    #     params = {
+    #         "file": cur_64,
+    #         "model": "whisper-1",
+    #         "language": "en",
+    #         "response_format": "json",
+    #         "temperature": 0.2  # Adjust
+    #     }
 
-        if response.status_code == 200:
-            result = response.json()
-            transcription = result['choices'][0]['text'].strip()
-            return transcription
-        else:
-            print("Error getting response from ChatGPT")
-            return None
+    #     response = requests.post(url, headers=headers, data=params)
+
+    #     if response.status_code == 200:
+    #         result = response.json()
+    #         # transcription = result['transcriptions'][0]['text']
+    #         return result
+    #     else:
+    #         print(response.text)
+    #         return None
             
 
 
@@ -333,8 +343,8 @@ def get_arguments():
     parser.add_argument('--engine', type=str)
     parser.add_argument('--model', type=str, default='')
     args = parser.parse_args()
-    if args.engine != 'whisper' and args.engine != 'GoogleSTT':
-        raise SystemExit('ERROR: The engine must be set to whisper or GoogleSTT.')
+    if args.engine != 'whisper' and args.engine != 'GoogleSTT' and args.engine != 'Chat':
+        raise SystemExit('ERROR: The engine must be set to whisper, GoogleSTT, or ChatGPT.')
     if len(args.id) != 24:
         raise SystemExit('ERROR: The experiment run ID (_id) must be a length of 24 symbols.')
     if args.engine == 'GoogleSTT':
@@ -347,6 +357,13 @@ def get_arguments():
     if args.engine == 'whisper':
         if args.model != 'base' and args.model != 'medium' and args.model != 'large':
             raise SystemExit('ERROR: Whisper model can be only base, medium or large')
+    if args.engine == 'Chat':
+        try:
+            api_key = os.environ['OPENAI_API_KEY']
+            if len(api_key) == 0:
+                raise SystemExit('ERROR: Provided OPEN API KEY key is not valid')
+        except KeyError:
+            raise SystemExit('ERROR: Please provide OPEN API KEY in OPEN_API_KEY environment variable')
     return args
 
 
