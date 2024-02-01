@@ -15,6 +15,7 @@ from nltk.tokenize import word_tokenize
 from Levenshtein import distance as lev
 import nltk.data
 import nltk
+import base64
 from nltk.translate import bleu
 from nltk.translate.bleu_score import SmoothingFunction
 
@@ -149,6 +150,7 @@ class Whisper(SpeechToTextEngine):
         if model == 'medium': w_model = whisper.load_model("medium.en")
         elif model == 'large': w_model = whisper.load_model("large")
         result = w_model.transcribe(wav)
+        print(result)
         start = wav.find("impaired")
         name = wav[start:len(wav)]
         list_punct = list(string.punctuation)
@@ -169,17 +171,23 @@ class Chat(SpeechToTextEngine):
         # result = w_model.transcribe(wav)
         # list_punct = list(string.punctuation)
         # pure_text = result["text"].translate(str.maketrans('', '', string.punctuation))
-        current_audio = Chat.get_binary_item_to_based64(self, wav)
-        #cur_text = Chat.get_response_by_api_url(self, wav)
-        print(wav)
-        cur_text = Chat.chat_client(self, current_audio)
-        print("Transcription: ")
-        print(cur_text)
+        current_audio = Chat.get_audio(self, wav) # base 64
+        # print("current_audio is type " + str(type(current_audio)))
+        encode_string = base64.b64encode(current_audio) # encode in base 64
+        wav_file = open("temp.wav", "wb") # open a wav file
+        decode_string = base64.b64decode(encode_string) # decode the file
+        wav_file.write(decode_string) # write the decoded audio into the wav
+        wav_read = open("temp.wav", "rb")
+
+        # get the transcription using ChatGPT
+        transcription = Chat.chat_client(self, wav_read)
+        print("\n")
 
         start = wav.find("impaired")
         name = wav[start:len(wav)]
+        print(name)
 
-        return name, cur_text
+        return name, transcription
 
     def get_exp_run(self, id):
         return super().get_exp_run(id)
@@ -191,49 +199,26 @@ class Chat(SpeechToTextEngine):
         return super().get_exp_run_analitics(id)
 
     def chat_client(self, wav):
+        # Call ChatGPT to get the transcription of the audio
         from openai import OpenAI
         client = OpenAI()
-        print(type(wav))
         # audio_data = wav.read()
 
         transcript = client.audio.transcriptions.create(
             model="whisper-1", 
             file=wav, 
-            response_format="json"
+            response_format="json",
+            temperature=0.4
         )
 
-        print(transcript)
-        return transcript
+        print(transcript.text)
+        return transcript.text
     
-    def get_binary_item_to_based64(self, audio_cur):
+    def get_audio(self, audio_cur):
+        # gets the audio from the API request
         resp = requests.get(audio_cur)
         return resp.content
-    
-    # def get_response_by_api_url(self, cur_64):
-    #     import requests
-    #     api_key = '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'
-    #     url = 'https://api.openai.com/v1/audio/transcriptions'
-    #     headers = {
-    #         "Content-Type": "application/json",
-    #         "Authorization": f"Bearer {api_key}",
-    #     }
-    #     params = {
-    #         "file": cur_64,
-    #         "model": "whisper-1",
-    #         "language": "en",
-    #         "response_format": "json",
-    #         "temperature": 0.2  # Adjust
-    #     }
-
-    #     response = requests.post(url, headers=headers, data=params)
-
-    #     if response.status_code == 200:
-    #         result = response.json()
-    #         # transcription = result['transcriptions'][0]['text']
-    #         return result
-    #     else:
-    #         print(response.text)
-    #         return None
+        # return base64.b64encode(resp.content).decode('utf-8')
             
 
 
