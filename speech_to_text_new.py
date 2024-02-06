@@ -168,9 +168,6 @@ class Whisper(SpeechToTextEngine):
     
 class Chat(SpeechToTextEngine):
     def transcribe(self, wav, model):
-        # result = w_model.transcribe(wav)
-        # list_punct = list(string.punctuation)
-        # pure_text = result["text"].translate(str.maketrans('', '', string.punctuation))
         current_audio = Chat.get_audio(self, wav) # base 64
         # print("current_audio is type " + str(type(current_audio)))
         encode_string = base64.b64encode(current_audio) # encode in base 64
@@ -185,7 +182,6 @@ class Chat(SpeechToTextEngine):
 
         start = wav.find("impaired")
         name = wav[start:len(wav)]
-        print(name)
 
         return name, transcription
 
@@ -217,9 +213,7 @@ class Chat(SpeechToTextEngine):
     def get_audio(self, audio_cur):
         # gets the audio from the API request
         resp = requests.get(audio_cur)
-        return resp.content
-        # return base64.b64encode(resp.content).decode('utf-8')
-            
+        return resp.content            
 
 
 def get_same_items(list1, list2):
