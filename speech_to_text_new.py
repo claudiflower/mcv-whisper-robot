@@ -15,6 +15,7 @@ from nltk.tokenize import word_tokenize
 from Levenshtein import distance as lev
 import nltk.data
 import nltk
+import base64
 from nltk.translate import bleu
 from nltk.translate.bleu_score import SmoothingFunction
 
@@ -149,6 +150,7 @@ class Whisper(SpeechToTextEngine):
         if model == 'medium': w_model = whisper.load_model("medium.en")
         elif model == 'large': w_model = whisper.load_model("large")
         result = w_model.transcribe(wav)
+        print(result)
         start = wav.find("impaired")
         name = wav[start:len(wav)]
         list_punct = list(string.punctuation)
@@ -163,6 +165,55 @@ class Whisper(SpeechToTextEngine):
 
     def get_exp_run_analitics(self, id):
         return super().get_exp_run_analitics(id)
+    
+class Chat(SpeechToTextEngine):
+    def transcribe(self, wav, model):
+        current_audio = Chat.get_audio(self, wav) # base 64
+        # print("current_audio is type " + str(type(current_audio)))
+        encode_string = base64.b64encode(current_audio) # encode in base 64
+        wav_file = open("temp.wav", "wb") # open a wav file
+        decode_string = base64.b64decode(encode_string) # decode the file
+        wav_file.write(decode_string) # write the decoded audio into the wav
+        wav_read = open("temp.wav", "rb")
+
+        # get the transcription using ChatGPT
+        transcription = Chat.chat_client(self, wav_read)
+        print("\n")
+
+        start = wav.find("impaired")
+        name = wav[start:len(wav)]
+
+        return name, transcription
+
+    def get_exp_run(self, id):
+        return super().get_exp_run(id)
+
+    def get_exp_run_answer(self, exp_id):
+        return super().get_exp_run_answer(exp_id)
+
+    def get_exp_run_analitics(self, id):
+        return super().get_exp_run_analitics(id)
+
+    def chat_client(self, wav):
+        # Call ChatGPT to get the transcription of the audio
+        from openai import OpenAI
+        client = OpenAI()
+        # audio_data = wav.read()
+
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1", 
+            file=wav, 
+            response_format="json",
+            temperature=0.4
+        )
+
+        print(transcript.text)
+        return transcript.text
+    
+    def get_audio(self, audio_cur):
+        # gets the audio from the API request
+        resp = requests.get(audio_cur)
+        return resp.content            
 
 
 def get_same_items(list1, list2):
@@ -271,8 +322,8 @@ def get_arguments():
     parser.add_argument('--engine', type=str)
     parser.add_argument('--model', type=str, default='')
     args = parser.parse_args()
-    if args.engine != 'whisper' and args.engine != 'GoogleSTT':
-        raise SystemExit('ERROR: The engine must be set to whisper or GoogleSTT.')
+    if args.engine != 'whisper' and args.engine != 'GoogleSTT' and args.engine != 'Chat':
+        raise SystemExit('ERROR: The engine must be set to whisper, GoogleSTT, or ChatGPT.')
     if len(args.id) != 24:
         raise SystemExit('ERROR: The experiment run ID (_id) must be a length of 24 symbols.')
     if args.engine == 'GoogleSTT':
@@ -285,6 +336,13 @@ def get_arguments():
     if args.engine == 'whisper':
         if args.model != 'base' and args.model != 'medium' and args.model != 'large':
             raise SystemExit('ERROR: Whisper model can be only base, medium or large')
+    if args.engine == 'Chat':
+        try:
+            api_key = os.environ['OPENAI_API_KEY']
+            if len(api_key) == 0:
+                raise SystemExit('ERROR: Provided OPEN API KEY key is not valid')
+        except KeyError:
+            raise SystemExit('ERROR: Please provide OPEN API KEY in OPEN_API_KEY environment variable')
     return args
 
 
@@ -305,9 +363,11 @@ def get_answers(stt, exp_run_id, model):
 if __name__ == '__main__':
     args = get_arguments()
 
-    stt = Whisper()
+    stt = Chat()
     if args.engine == 'GoogleSTT':
         stt = GoogleSTT({'key': os.environ['GOOGLE_STT_KEY']})
+    elif args.engine == 'Whisper':
+        stt = Whisper()
 
     transcribed_answer, correct_answer = get_answers(stt, args.id, args.model)
 

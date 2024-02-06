@@ -9,6 +9,9 @@ source mcv-whisper-robot/bin/activate
 cd mcv-whisper-robot
 git clone git@github.com:irtlab/mcv-whisper-robot.git
 pip3 install -r mcv-whisper-robot/requirements.txt
+pip3 install git+https://github.com/openai/whisper.git 
+pip install openai==0.28
+pip install python-Levenshtein==0.12.0
 ```
 
 To install Whisper, run the following command: (see instructions for more details: https://github.com/openai/whisper#setup)
@@ -28,6 +31,8 @@ with the correct arguments.
 For example,
 ```bash
 python speech_to_text.py --id=64822d9847d575f5c76aa2b9 --engine=whisper --model=medium
+GOOGLE_STT_KEY=AIzaSyB-5VKtWsx7yCGCOxHRfpRDyZGjU8f4N80 
+python speech_to_text.py --id=64822d9847d575f5c76aa2b9 --engine=GoogleSTT
 ```
 
 ## Running Output
