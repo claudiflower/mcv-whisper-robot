@@ -178,7 +178,7 @@ class Chat(SpeechToTextEngine):
 
         # get the transcription using ChatGPT
         transcription = Chat.chat_client(self, wav_read)
-        print("\n")
+        self.parse_plate(transcription)
 
         start = wav.find("impaired")
         name = wav[start:len(wav)]
@@ -215,20 +215,19 @@ class Chat(SpeechToTextEngine):
         resp = requests.get(audio_cur)
         return resp.content    
 
-    def parse_plate(transcription):
+    def parse_plate(self, transcription):
         from openai import OpenAI
         client = OpenAI()
 
-        our_prompt = "Given this text: {transcription}\n, a license plate number is reported after the text 'Reporting license plate'. Please just give me the license plate number."
-        response = client.Completion.create(
-            model="gpt-3.5-turbo-instruct",
-            logprobs = 5,
-            engine="davinci",
-            prompt=our_prompt,
-            max_tokens=50,  # to adjust
+        # Given a trascription, find the license plate number with ChatGPT
+        our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate'. Please just give me the license plate number."
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": our_prompt}],
+            max_tokens=50, 
         )
-        print(response.choices[0].text.strip())
-        return response.choices[0].text.strip()
+        print("from chatGPT: " + response.choices[0].message.content + "\n")
+        return response.choices[0].message.content
 
 def get_same_items(list1, list2):
     find_liencse = []
