@@ -213,8 +213,22 @@ class Chat(SpeechToTextEngine):
     def get_audio(self, audio_cur):
         # gets the audio from the API request
         resp = requests.get(audio_cur)
-        return resp.content            
+        return resp.content    
 
+    def parse_plate(transcription):
+        from openai import OpenAI
+        client = OpenAI()
+
+        our_prompt = "Given this text: {transcription}\n, a license plate number is reported after the text 'Reporting license plate'. Please just give me the license plate number."
+        response = client.Completion.create(
+            model="gpt-3.5-turbo-instruct",
+            logprobs = 5,
+            engine="davinci",
+            prompt=our_prompt,
+            max_tokens=50,  # to adjust
+        )
+        print(response.choices[0].text.strip())
+        return response.choices[0].text.strip()
 
 def get_same_items(list1, list2):
     find_liencse = []
@@ -403,6 +417,3 @@ if __name__ == '__main__':
         os.makedirs(dir_name)
     with open(f'{dir_name}/{filename}.json', "w") as outfile:
         outfile.write(json.dumps(result))
-
-# create new class for Chat
-# only thing different is transcribefd
