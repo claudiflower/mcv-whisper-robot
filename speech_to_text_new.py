@@ -84,6 +84,7 @@ class GoogleSTT(SpeechToTextEngine):
         cur_text = GoogleSTT.get_response_by_api_url(self, current_audio)
         start = wav.find("impaired")
         name = wav[start:len(wav)]
+        self.parse_plate(cur_text)
         return name, cur_text
 
     def get_exp_run(self, id):
@@ -136,6 +137,74 @@ class GoogleSTT(SpeechToTextEngine):
             # return 0
             print("There is a 15s check for api_ url ")
             return ""
+        
+    def parse_plate(self, transcription):
+        from openai import OpenAI
+        client = OpenAI()
+
+        # Given a trascription, find the license plate number with ChatGPT
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is always reported. Please return your best guess of what the license plate number is."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate or 'Recording license plate'. Please just give me the license plate number. If it does not say 'Reporting license plate or 'Recording license plate' please make your best guess as to what the license plate number is, even if it does not look like a standard license plate number."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate or 'Recording license plate'. Please just give me the license plate number. If it does not say 'Reporting license plate or 'Recording license plate' please make your best guess as to what the license plate number is, even if it does not look like a standard license plate number. Only respond with the potential license plate number."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate' or 'Recording license plate'. Please just give me the license plate number."
+        # continuous prompts? for loop? training vs testing prompts
+        # all transcriptions and answers for them, then do comparisons
+        our_prompt = """Given this text: """ + str(transcription) + """ a license plate number is recorded using the NATO phonetic alphabet. 
+                    The NATO Phonetic alphabet is Alpha, Bravo, Charlie, Delta, Echo, Foxtrot, Golf, Hotel, India, Juliett, Kilo, Lima, Mike, 
+                    November, Oscar, Papa, Quebec, Romeo, Sierra, Tango, Uniform, Victor, Whiskey, X-ray, Yankee, Zulu, where Alpha represents 
+                    the letter A, Bravo represents the letter B, Charlie represents the letter C, Delta represents the letter D, Echo represents
+                    the letter E, Foxtrot represents the letter F, Golf represents the letter G, Hotel represents the letter H, India represents 
+                    the letter I, Juliertt represents the letter J, Kilo represents the letter K, Lima represents the letter L, Mike represents
+                    the letter M, November represents the letter N, Oscar represents the letter O, Papa represents the letter P, Quebec represents
+                    the letter Q, Romeo represents the letter R, Sierra represents the letter S, Tango represents the letter T, Uniform represents 
+                    the letter U, Victor represents the letter V, Whiskey represents the letter W, X-Ray represents the letter X, Yankee represents
+                    the letter Y, and Zulu represents the letter Z. So, if you see the word Bravo, then that will be the letter B in the license
+                    plate number.
+
+                    For example, given something like the text Reporting November 03 Delta November kilo, the returned license plate would be N03NK using the NATO phonetic alphabet. 
+                    Another example is that given something like the text Recording license plate, Zulu, 6-1, Quebec, Romeo, X-ray, then the returned license plate would be Z61QRX. 
+                    Another example could be given something like the text Reporting license plate, Puebla, 9-7, HOtel, Kilo, Foxtrot, then you should return the license plate P97HKF
+                    Another example could be given something like the text, Recording license plate Tango, 69 Foxtrot Kilo, golf then you should return the license plate T69FKG
+
+                    Even if the transcription is not entirely in NATO phonetic alphabet, still return a license plate. 
+                    For example, given soemthing like the text Arnold7 4, JULIETTE, xit, Queen, then you should return the license plate A74JXQ.
+                    Another example could be given something like the text QUIIIICK, 6-3, bravo, funny x, then you should return the license plate Q63BFX
+                    Another example could be given something like the text umbrella 48large sser, Germ, then you should return the license plate U48LSG
+
+                    Another example is if the transcription is something like Recording Life's More Plate, Juliet, 5, 6, Dakota, Kilo, Yankee, you should return J56EKY
+                    Another example is if the transcription is something like Reporting License Plate, Delta 1-7 Bravo, Victor, Echo. you should return D17BVE
+                    Another example is if the transcription is something like Reporting license plate, Foxtrot, 2-0, Brasil, Uniform, Quebec. you should return the license plate F20BUQ 
+                    Another example is if the transcription is something like Reporting license plate Bravo 88 Kilo Tango Tango. you should return the license plate B88KTT
+                    Another example is if the transcription is something like Reporting lysis plate, Whiskey, 5, 5, Victor, Echo, Tango. you should return the license plate W55VET
+                    Another example is if the transcription is something like Reporting a license plate, Delta 62, November, Foxtrot, Whiskey. you should return the license plate D62NFW
+                    Another example is if the transcription is something like Recording will display echo live on this 1st of November. you should return the license plate E95GPN
+                    Another example is if the transcription is something like Reporting License Plate, Delta-3-8, Yankee, Papa, Sierra. you should return the license plate D38YPS
+                    Another example is if the transcription is something like Reporting license plate, 889-2 Yankee Hotel, Hobart. you should return the license plate Y92YHP
+                    Another example is if the transcription is something like Reporting license plate, SACRA, 7560UFM. Thank you. you should return the license plate S75ZUV
+                    Another example is if the transcription is something like Recording License Plate, Whiskey, 5-5, Foxtrot, Whiskey, November. you should return the license plate W55FWN
+                    Another example is if the transcription is something like Reporting License Plate, Sierra, 6, 4, Bravo, Light, November. you should return the license plate S64BMN
+                    Another example is if the transcription is something like Reporting live in Quebec, 6-2, Havre, Hector, Whiskey. you should return the license plate Q62PVW
+                    Another example is if the transcription is something like Reporting life has plagued Kilo-8-0-Alpha-Echo-Kappa. you should return the license plate K80AEP
+                    Another example is if the transcription is something like Reporting license plate, Kilo, 9, 9, Charlie, Alpha, X-ray. you should return the license plate K99CAX
+                    Another example is if the transcription is something like Report of license plate, Victor, month, four, year four, salute, Victor. you should return the license plate V14UZV
+                    Another example is if the transcription is something like Reporting license plate, Alpha, Five, Seven, Kilo, Delta, Yankee. you should return the license plate A57KDY
+                    Another example is if the transcription is something like Reporting license plate, Gulf 1-7, X-ray, X-ray, Romeo. you should return the license plate G17XXR
+                    Another example is if the transcription is something like Recording by SIS Plate, Hotel 9-7-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0 you should return the license plate H97000
+                    Another example is if the transcription is something like Recording access plate Quebec 9 4. you should return the license plate Q94
+                    Another example is if the transcription is something like Your cultural life has played a powerful role in the creation of this incredible experience. Thank you. you should return the license plate A28CXT
+                    Another example is if the transcription is something like Reporting license plate, Romeo 7 3 Romeo Lima Whiskey. you should return the license plate R73RLW
+                    Another example is if the transcription is something like Recording License Plate, Echo, 1, 5, X-Ray, Charlie, Charlie. you should return the license plate E15XCC
+                    Another example is if the transcription is something like Reporting Licence Plate, Echo, 4-4, Bravo, Uniform, Quebec. you should return the license plate E44BUQ
+                    
+                    Please return the license plate written in NATO phonetic alphabet from the text """ + str(transcription)
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": our_prompt}],
+            max_tokens=50, 
+        )
+        print("from chatGPT: " + response.choices[0].message.content + "\n")
+        return response.choices[0].message.content
 
 
 class Whisper(SpeechToTextEngine):
@@ -220,7 +289,10 @@ class Chat(SpeechToTextEngine):
         client = OpenAI()
 
         # Given a trascription, find the license plate number with ChatGPT
-        our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate'. Please just give me the license plate number."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is always reported. Please return your best guess of what the license plate number is."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate or 'Recording license plate'. Please just give me the license plate number. If it does not say 'Reporting license plate or 'Recording license plate' please make your best guess as to what the license plate number is, even if it does not look like a standard license plate number."
+        our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate or 'Recording license plate'. Please just give me the license plate number. If it does not say 'Reporting license plate or 'Recording license plate' please make your best guess as to what the license plate number is, even if it does not look like a standard license plate number. Only respond with the potential license plate number."
+        # our_prompt = "Given this text: " + str(transcription) + " a license plate number is reported after the text 'Reporting license plate' or 'Recording license plate'. Please just give me the license plate number."
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": our_prompt}],
